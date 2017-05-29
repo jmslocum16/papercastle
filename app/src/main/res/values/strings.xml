@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PaperCastle</string>
+    <string name="start_game_button_text">Start Game</string>
+</resources>
