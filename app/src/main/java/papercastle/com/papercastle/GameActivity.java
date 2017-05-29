@@ -4,18 +4,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 public class GameActivity extends Activity {
 
@@ -65,7 +60,8 @@ public class GameActivity extends Activity {
         private final SurfaceHolder canvasHolder;
         private final Paint paint;
 
-        private int width = -1;
+        private int canvasWidth = -1;
+        private int uiWidth = -1;
         private int height = -1;
         private int gridSize = -1; // TODO
 
@@ -99,8 +95,6 @@ public class GameActivity extends Activity {
             setup();
 
             resume();
-
-
         }
 
         private void handleClick(int screenX, int screenY) {
@@ -121,8 +115,15 @@ public class GameActivity extends Activity {
         }
 
         // TODO make this work based on screen dimensions
-        private void computeGridSize() {
-            gridSize = 135;
+        private void computeUIFactors(final int width, final int height) {
+            // want menu on side to be at least 10% of screen
+            uiWidth = width / 10;
+            canvasWidth = width - uiWidth;
+            this.height = height;
+            gridSize = Math.min(canvasWidth / Level.WIDTH, height / Level.HEIGHT);
+            canvasWidth = Math.min(canvasWidth, Level.WIDTH * gridSize);
+            uiWidth = width - canvasWidth;
+            Log.e("GameActivity", "calculated grid size " + gridSize);
         }
 
         private void setup() {
@@ -133,16 +134,15 @@ public class GameActivity extends Activity {
         private void setupLevel() {
             currentLevel = Math.min(currentLevel, Level.ALL_LEVELS.length - 1);
             levelState = new LevelState(Level.ALL_LEVELS[currentLevel], gridSize);
+            levelState.updateUI(canvasWidth, uiWidth, height, gridSize);
         }
 
         @Override
         protected void onLayout(boolean changed, int l, int t, int r, int b) {
             super.onLayout(changed, l, t, r, b);
-            width = getWidth();
-            height = getHeight();
-            computeGridSize();
+            computeUIFactors(getWidth(), getHeight());
             if (levelState != null) {
-                levelState.updateGridSize(gridSize);
+                levelState.updateUI(canvasWidth, uiWidth, height, gridSize);
             }
         }
 
@@ -178,11 +178,11 @@ public class GameActivity extends Activity {
         }
 
         private void doDraw() {
-            if (canvasHolder.getSurface().isValid() && width != -1 && height != -1) {
+            if (canvasHolder.getSurface().isValid() && canvasWidth != -1 && height != -1) {
                 // Lock the canvas ready to draw
                 final Canvas canvas = canvasHolder.lockCanvas();
 
-                levelState.draw(canvas, paint, width, height);
+                levelState.draw(canvas, paint);
 
                 // Draw everything to the screen
                 canvasHolder.unlockCanvasAndPost(canvas);

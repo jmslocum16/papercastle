@@ -39,6 +39,9 @@ public class Level {
         return layout;
     }
 
+    public static final int WIDTH = 9;
+    public static final int HEIGHT = 6;
+
     public static final Level[] ALL_LEVELS = new Level[] {
             new Level(GRID, new Terrain[][] {
                     {START, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE},

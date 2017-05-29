@@ -3,6 +3,7 @@ package papercastle.com.papercastle;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Point;
 import android.util.Log;
 
@@ -26,6 +27,10 @@ public class LevelState {
     private final Level.Terrain[][] terrain; // array is [y][x]
     private final CoordinateSpace cs;
     private GameState gameState;
+
+    private int canvasWidth = -1;
+    private int uiWidth = -1;
+    private int height = -1;
 
     // non-static objects (objects that need to move each frame)
     private final Set<GameObject> objects;
@@ -87,7 +92,7 @@ public class LevelState {
         selectableObjects.add(playerObject);
         selectObject(playerObject);
 
-        gameState = GameState.PLAN;
+        switchToPlan();
 
         // TODO remove once cloning implemented
         final SelectableGameObject tmpClone = new SelectableGameObject(new Point(4, 4), 1.0, Color.argb(255, 255, 160, 0));
@@ -134,10 +139,11 @@ public class LevelState {
         }
     }
 
-    public void draw(Canvas canvas, Paint paint, int width, int height) {
+    public void draw(Canvas canvas, Paint paint) {
         paint.setStyle(Paint.Style.FILL);
         paint.setARGB(255, 255, 255, 255);
-        canvas.drawRect(0, 0, width, height, paint);
+        canvas.drawRect(0, 0, canvasWidth, height, paint);
+
 
         // do drawing on canvas
         cs.draw(canvas, paint);
@@ -145,7 +151,6 @@ public class LevelState {
         for (GameObject object : objects) {
             object.draw(cs, canvas, paint);
         }
-
 
         if (isDone()) {
             final String text;
@@ -157,15 +162,50 @@ public class LevelState {
                 text = "Level Failed!";
             }
             paint.setTextAlign(Paint.Align.CENTER);
-            paint.setTextSize(200.0f);
-            canvas.drawText(text, width / 2.0f, height / 2.0f, paint);
+            paint.setTextSize(150.0f);
+            canvas.drawText(text, canvasWidth / 2.0f, height / 2.0f, paint);
+        }
+
+
+
+        paint.setARGB(255, 0, 0, 0);
+        canvas.drawRect(canvasWidth, 0, canvasWidth + uiWidth, height, paint);
+
+        // draw UI
+
+        final int drawWidth = Math.min(height / 8, uiWidth / 2);
+        paint.setColor(Color.WHITE);
+        paint.setStyle(Paint.Style.FILL);
+        final int centerX = canvasWidth + uiWidth / 2;
+        final int centerY = height / 8;
+
+        if (gameState == GameState.PLAN) {
+            final Point topLeft = new Point(centerX - drawWidth / 2, centerY - drawWidth / 2);
+            final Point bottomLeft = new Point(centerX - drawWidth / 2, centerY + drawWidth / 2);
+            final Point right = new Point(centerX + drawWidth / 2, centerY);
+
+            // play button
+            final Path path = new Path();
+            path.setFillType(Path.FillType.EVEN_ODD);
+            path.moveTo(bottomLeft.x, bottomLeft.y);
+            path.lineTo(right.x, right.y);
+            path.lineTo(topLeft.x, topLeft.y);
+            path.close();
+            canvas.drawPath(path, paint);
+        } else if (gameState == GameState.EXECUTE) {
+            // pause button
+            canvas.drawRect(centerX - drawWidth / 2, centerY - drawWidth / 2, centerX - drawWidth / 4, centerY + drawWidth / 2, paint);
+            canvas.drawRect(centerX + drawWidth / 4, centerY - drawWidth / 2, centerX + drawWidth / 2, centerY + drawWidth / 2, paint);
         }
     }
 
-    public void updateGridSize(int gridSize) {
+    public void updateUI(int canvasWidth, int uiWidth, int height, int gridSize) {
         if (cs != null) {
             cs.updateGridSize(gridSize);
         }
+        this.canvasWidth = canvasWidth;
+        this.uiWidth = uiWidth;
+        this.height = height;
     }
 
     public boolean isDone() {
@@ -185,6 +225,25 @@ public class LevelState {
     }
 
     public void handleClick(int screenX, int screenY) {
+        if (screenX < canvasWidth) {
+            handleCanvasClick(screenX, screenY);
+        } else {
+            handleUIClick(screenX - canvasWidth, screenY);
+        }
+    }
+
+    private void handleUIClick(int uiX, int uiY) {
+        if (uiY < height / 4) {
+            // play button
+            if (gameState == GameState.EXECUTE) {
+                switchToPlan();
+            } else if (gameState == GameState.PLAN) {
+                switchToExecute();
+            }
+        }
+    }
+
+    private void handleCanvasClick(int screenX, int screenY) {
         if (gameState == GameState.EXECUTE) {
             switchToPlan();
             return;
@@ -206,9 +265,9 @@ public class LevelState {
             final SelectableGameObject clicked = getClickedSelectableObject(screenX, screenY);
             selectObject(clicked);
             // TODO remove once have ui
-            if (clicked == null) {
+            /*if (clicked == null) {
                 switchToExecute();
-            }
+            }*/
         }
     }
 
