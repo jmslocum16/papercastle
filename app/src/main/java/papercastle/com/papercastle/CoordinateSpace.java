@@ -4,6 +4,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 
+import java.util.List;
+
 /**
  * Created by Josh on 5/26/2017.
  */
@@ -21,7 +23,11 @@ public interface CoordinateSpace {
     // TODO
     public void draw(Canvas canvas, Paint paint);
 
+    public void highlightCell(Point p, Canvas canvas, Paint paint);
+
     public void updateGridSize(int gridSize);
 
     public int getGridSize();
+
+    public List<Point> neighbors(Point p);
 }

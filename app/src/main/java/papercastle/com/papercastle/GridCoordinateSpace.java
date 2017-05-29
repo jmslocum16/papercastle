@@ -4,6 +4,9 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * A grid coordinate space
  * Created by Josh on 5/26/2017.
@@ -61,6 +64,14 @@ public class GridCoordinateSpace implements CoordinateSpace {
     }
 
     @Override
+    public void highlightCell(Point p, Canvas canvas, Paint paint) {
+        paint.setStrokeWidth(10);
+        final int x = screenOrigin.x + p.x * gridSize;
+        final int y = screenOrigin.y + p.y * gridSize;
+        canvas.drawRect(x, y, x + gridSize, y + gridSize, paint);
+    }
+
+    @Override
     public void updateGridSize(final int gridSize) {
         this.gridSize = gridSize;
     }
@@ -68,5 +79,21 @@ public class GridCoordinateSpace implements CoordinateSpace {
     @Override
     public int getGridSize() {
         return gridSize;
+    }
+
+    @Override
+    public List<Point> neighbors(Point p) {
+        final List<Point> l = new ArrayList<>(4);
+        addIfInBounds(l, p.x - 1, p.y);
+        addIfInBounds(l, p.x + 1, p.y);
+        addIfInBounds(l, p.x, p.y - 1);
+        addIfInBounds(l, p.x, p.y + 1);
+        return l;
+    }
+
+    private void addIfInBounds(List<Point> l, int x, int y) {
+        if (x >= 0 && y >= 0 && x < gridWidth && y < gridHeight) {
+            l.add(new Point(x, y));
+        }
     }
 }

@@ -9,6 +9,7 @@ import android.util.Log;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import static papercastle.com.papercastle.Level.Terrain.NONE;
@@ -33,6 +34,8 @@ public class LevelState {
     private int height = -1;
 
     // non-static objects (objects that need to move each frame)
+
+    private final Object objectsLock = new Object();// used to synchronize access to objects sets between game and ui threads
     private final Set<GameObject> objects;
     // selectable objects
     private final Set<SelectableGameObject> selectableObjects;
@@ -40,6 +43,10 @@ public class LevelState {
     private volatile SelectableGameObject selectedObject;
     // player object
     private SelectableGameObject playerObject;
+
+    // clone stuff
+    private final int[] availableClones;
+    private int activeClonePlacement;
 
     // traps
     private final Point endPos;
@@ -92,13 +99,10 @@ public class LevelState {
         selectableObjects.add(playerObject);
         selectObject(playerObject);
 
-        switchToPlan();
+        availableClones = Arrays.copyOf(l.getCloneTypes(), l.getCloneTypes().length);
+        activeClonePlacement = -1;
 
-        // TODO remove once cloning implemented
-        final SelectableGameObject tmpClone = new SelectableGameObject(new Point(4, 4), 1.0, Color.argb(255, 255, 160, 0));
-        objects.add(tmpClone);
-        selectableObjects.add(tmpClone);
-        selectObject(tmpClone);
+        switchToPlan();
     }
 
     private void selectObject(final SelectableGameObject newSelection) {
@@ -114,8 +118,10 @@ public class LevelState {
     public void update(final long ms) {
         if (gameState == GameState.EXECUTE) {
             // move all movable objects
-            for (GameObject object: objects) {
-                object.update(ms);
+            synchronized (objectsLock) {
+                for (GameObject object : objects) {
+                    object.update(ms);
+                }
             }
 
             // object interactions
@@ -144,12 +150,23 @@ public class LevelState {
         paint.setARGB(255, 255, 255, 255);
         canvas.drawRect(0, 0, canvasWidth, height, paint);
 
-
         // do drawing on canvas
         cs.draw(canvas, paint);
 
-        for (GameObject object : objects) {
-            object.draw(cs, canvas, paint);
+        if (activeClonePlacement != -1) {
+            paint.setColor(Color.RED);
+            final Point playerScreenPos = playerObject.getCurScreenPos(cs);
+            final Point playerPos = cs.screenToPos(playerScreenPos);
+            final List<Point> playerNeighbors = cs.neighbors(playerPos);
+            for (final Point neighbor : playerNeighbors) {
+                cs.highlightCell(neighbor, canvas, paint);
+            }
+        }
+
+        synchronized (objectsLock) {
+            for (GameObject object : objects) {
+                object.draw(cs, canvas, paint);
+            }
         }
 
         if (isDone()) {
@@ -162,10 +179,10 @@ public class LevelState {
                 text = "Level Failed!";
             }
             paint.setTextAlign(Paint.Align.CENTER);
-            paint.setTextSize(150.0f);
-            canvas.drawText(text, canvasWidth / 2.0f, height / 2.0f, paint);
+            final float textSize = 150.0f;
+            paint.setTextSize(textSize);
+            canvas.drawText(text, canvasWidth / 2.0f, height / 2.0f + textSize/4, paint);
         }
-
 
 
         paint.setARGB(255, 0, 0, 0);
@@ -176,15 +193,15 @@ public class LevelState {
         final int drawWidth = Math.min(height / 8, uiWidth / 2);
         paint.setColor(Color.WHITE);
         paint.setStyle(Paint.Style.FILL);
-        final int centerX = canvasWidth + uiWidth / 2;
-        final int centerY = height / 8;
+        int centerX = canvasWidth + uiWidth / 2;
+        int centerY = height / 8;
 
         if (gameState == GameState.PLAN) {
+            // play button
             final Point topLeft = new Point(centerX - drawWidth / 2, centerY - drawWidth / 2);
             final Point bottomLeft = new Point(centerX - drawWidth / 2, centerY + drawWidth / 2);
             final Point right = new Point(centerX + drawWidth / 2, centerY);
 
-            // play button
             final Path path = new Path();
             path.setFillType(Path.FillType.EVEN_ODD);
             path.moveTo(bottomLeft.x, bottomLeft.y);
@@ -197,6 +214,39 @@ public class LevelState {
             canvas.drawRect(centerX - drawWidth / 2, centerY - drawWidth / 2, centerX - drawWidth / 4, centerY + drawWidth / 2, paint);
             canvas.drawRect(centerX + drawWidth / 4, centerY - drawWidth / 2, centerX + drawWidth / 2, centerY + drawWidth / 2, paint);
         }
+
+        // draw any active clone placements
+        int pos = 0;
+        for (int i = 0; i < availableClones.length; i++) {
+            if (availableClones[i] > 0) {
+
+                // draw a line at the top
+                drawUILine((2 + pos) * height / 8, canvas, paint);
+
+                centerX = canvasWidth + drawWidth * 2 / 3;
+                centerY = (5 + pos * 2) * height / 16;
+                paint.setColor(Color.argb(255, 255, 160, 0)); // TODO real color based on clonedef
+
+                paint.setStyle(Paint.Style.FILL);
+                canvas.drawCircle(centerX, centerY, drawWidth / 3, paint);
+
+                paint.setColor(Color.WHITE);
+                final int textSize = drawWidth * 2 / 3;
+                paint.setTextSize(textSize);
+                canvas.drawText("" + availableClones[i], canvasWidth + drawWidth * 4 / 3, centerY + textSize / 2, paint);
+
+                pos++;
+            }
+        }
+
+        // draw a line at the bottom
+        drawUILine((2 + pos) * height / 8, canvas, paint);
+    }
+
+    private void drawUILine(int uiY, Canvas canvas, Paint paint) {
+        paint.setColor(Color.DKGRAY);
+        paint.setStrokeWidth(2.0f);
+        canvas.drawLine(canvasWidth, uiY, canvasWidth + uiWidth, uiY, paint);
     }
 
     public void updateUI(int canvasWidth, int uiWidth, int height, int gridSize) {
@@ -240,7 +290,47 @@ public class LevelState {
             } else if (gameState == GameState.PLAN) {
                 switchToExecute();
             }
+        } else {
+            if (gameState == GameState.EXECUTE) {
+                switchToPlan();
+            }
+            final int index = uiY / (height / 8) - 2;
+            int pos = 0;
+            int i;
+            // find the index'th non-zero int in available clones
+            for (i = 0; i < availableClones.length; i++) {
+                if (availableClones[i] > 0) {
+                    if (pos == index) {
+                        break;
+                    }
+                    pos++;
+                }
+            }
+            if (i < availableClones.length) {
+                Log.e("LevelState", "clicked clone pos " + pos + " which is clone index " + i);
+                startClonePlacement(i);
+            }
         }
+    }
+
+    private void stopClonePlacement() {
+        activeClonePlacement = -1;
+    }
+
+    private void startClonePlacement(final int cloneTypeNum) {
+        stopClonePlacement();
+        activeClonePlacement = cloneTypeNum;
+        selectObject(null);
+    }
+
+    private void successfulClonePlacement(final Point p, final int cloneTypeNum) {
+        stopClonePlacement();
+        final SelectableGameObject newClone = new SelectableGameObject(p, 1.0, Color.argb(255, 255, 160 ,0)); // TODO actual types
+        synchronized (objectsLock) {
+            objects.add(newClone);
+            selectableObjects.add(newClone);
+        }
+        availableClones[cloneTypeNum]--;
     }
 
     private void handleCanvasClick(int screenX, int screenY) {
@@ -248,15 +338,26 @@ public class LevelState {
             switchToPlan();
             return;
         }
-        // TODO have to move changing levels outside of here
 
-        final Point pos = cs.screenToPos(new Point(screenX, screenY));
-        // TODO clone placement
+        final Point clickPos = cs.screenToPos(new Point(screenX, screenY));
+
+        if (activeClonePlacement != -1) {
+            final Point playerScreenPos = playerObject.getCurScreenPos(cs);
+            final Point playerPos = cs.screenToPos(playerScreenPos);
+            final int clickDist = cs.distance(clickPos, playerPos);
+            if (clickDist == 1 && isPassable(clickPos)) {
+                successfulClonePlacement(clickPos, activeClonePlacement);
+                return;
+            }
+            stopClonePlacement();
+            return;
+        }
+
         if (selectedObject != null) {
             final Point lastPathPoint = selectedObject.getLastPathPoint();
-            final int manDist = cs.distance(pos, lastPathPoint);
-            if (manDist == 1 && isPassable(pos)) {
-                selectedObject.addPointToPath(pos);
+            final int manDist = cs.distance(clickPos, lastPathPoint);
+            if (manDist == 1 && isPassable(clickPos)) {
+                selectedObject.addPointToPath(clickPos);
             } else if (manDist >= 2) {
                 selectObject(getClickedSelectableObject(screenX, screenY));
             }
@@ -264,22 +365,16 @@ public class LevelState {
             // TODO once have ui simplify
             final SelectableGameObject clicked = getClickedSelectableObject(screenX, screenY);
             selectObject(clicked);
-            // TODO remove once have ui
-            /*if (clicked == null) {
-                switchToExecute();
-            }*/
         }
     }
 
     private void switchToPlan() {
         gameState = GameState.PLAN;
-        // TODO UI stuff will have to be out of here
     }
 
     private void switchToExecute() {
         gameState = GameState.EXECUTE;
         selectObject(null);
-        // TODO UI stuff will have to be out of here
     }
 
 
@@ -287,14 +382,16 @@ public class LevelState {
         SelectableGameObject closest = null;
         int smallestDist = Integer.MAX_VALUE;
 
-        for (final SelectableGameObject object : selectableObjects) {
-            final Point pos = object.getCurScreenPos(cs);
-            final int distX = pos.x - screenX;
-            final int distY = pos.y - screenY;
-            final int screenDist2 = distX * distX + distY * distY;
-            if (screenDist2 < smallestDist && (Math.abs(distX) <= cs.getGridSize()/2) && (Math.abs(distY) <= cs.getGridSize()/2)) {
-                closest = object;
-                smallestDist = screenDist2;
+        synchronized (objectsLock) {
+            for (final SelectableGameObject object : selectableObjects) {
+                final Point pos = object.getCurScreenPos(cs);
+                final int distX = pos.x - screenX;
+                final int distY = pos.y - screenY;
+                final int screenDist2 = distX * distX + distY * distY;
+                if (screenDist2 < smallestDist && (Math.abs(distX) <= cs.getGridSize() / 2) && (Math.abs(distY) <= cs.getGridSize() / 2)) {
+                    closest = object;
+                    smallestDist = screenDist2;
+                }
             }
         }
         return closest;

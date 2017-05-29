@@ -24,11 +24,13 @@ public class Level {
 
     private final CSType csType;
     private final Terrain[][] layout;
+    private final int[] cloneTypes;
     // TODO clone type definitions
 
-    Level(CSType csType, Terrain[][] layout) {
+    Level(CSType csType, Terrain[][] layout, int[] cloneTypes) {
         this.csType = csType;
         this.layout = layout;
+        this.cloneTypes = cloneTypes;
     }
 
     public CSType getCsType() {
@@ -37,6 +39,10 @@ public class Level {
 
     public Terrain[][] getLayout() {
         return layout;
+    }
+
+    public int[] getCloneTypes() {
+        return cloneTypes;
     }
 
     public static final int WIDTH = 9;
@@ -50,6 +56,14 @@ public class Level {
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE},
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE},
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE}
-            })
+            }, new int[] {1, 0, 2, 0, 21}),
+            new Level(GRID, new Terrain[][] {
+                    {NONE, NONE, NONE, NONE, NONE, WALL, NONE, NONE, NONE},
+                    {NONE, NONE, NONE, WALL, NONE, WALL, NONE, NONE, NONE},
+                    {NONE, NONE, START, WALL, NONE, WALL, WALL, WALL, NONE},
+                    {WALL, WALL, WALL, WALL, NONE, WALL, END, NONE, NONE},
+                    {NONE, NONE, NONE, NONE, NONE, WALL, WALL, WALL, NONE},
+                    {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE}
+            }, new int[] {0, 0, 1})
     };
 }
