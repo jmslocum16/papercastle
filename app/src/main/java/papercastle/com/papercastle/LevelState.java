@@ -108,7 +108,7 @@ public class LevelState {
         activeClonePlacement = -1;
 
         for (GuardObject.GuardFactory factory : l.getGuards()) {
-            final GuardObject guard = factory.create();
+            final GuardObject guard = factory.create(cs);
             guard.computeLOS(cs, terrain);
             objects.add(guard);
         }

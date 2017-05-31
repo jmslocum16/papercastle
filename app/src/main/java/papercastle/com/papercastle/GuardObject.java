@@ -133,7 +133,7 @@ public class GuardObject extends GameObject {
     }
 
     public interface GuardFactory {
-        GuardObject create();
+        GuardObject create(CoordinateSpace cs);
     }
 
     public static class StationaryGuardFactory implements GuardFactory {
@@ -149,7 +149,7 @@ public class GuardObject extends GameObject {
         }
 
         @Override
-        public GuardObject create() {
+        public GuardObject create(final CoordinateSpace cs) {
             return new GuardObject(p, los, dir);
         }
     }

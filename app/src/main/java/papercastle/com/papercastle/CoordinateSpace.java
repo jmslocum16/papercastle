@@ -33,4 +33,6 @@ public interface CoordinateSpace {
     public int numDirections();
 
     public Point getNeighborInDirection(Point p, int direction);
+
+    public int getDirectionVector(Point a, Point b);
 }

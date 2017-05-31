@@ -12,14 +12,16 @@ public class RotatingGuardObject extends GuardObject {
     private int rotateMs;
 
     private final int[] directions;
+    private final boolean restart;
     private int directionIndex;
 
-    public RotatingGuardObject(Point start, int los, int[] directions) {
+    public RotatingGuardObject(Point start, int los, int[] directions, boolean restart) {
         super(start, los, directions[0]);
         if (directions.length < 2) throw new IllegalArgumentException("" + directions.length);
         this.directions = directions;
         directionIndex = 0;
         rotateMs = 0;
+        this.restart = restart;
     }
 
     @Override
@@ -35,7 +37,11 @@ public class RotatingGuardObject extends GuardObject {
 
     private void rotate() {
         if (directionIndex == directions.length - 1) {
-            directionIndex = -(directions.length - 2);
+            if (restart) {
+                directionIndex = 0;
+            } else {
+                directionIndex = -(directions.length - 2);
+            }
         } else {
             directionIndex++;
         }
@@ -47,16 +53,18 @@ public class RotatingGuardObject extends GuardObject {
         private final Point p;
         private final int los;
         private final int[] dirs;
+        private final boolean restart;
 
-        public RotatingGuardFactory(Point p, int los, int[] dirs) {
+        public RotatingGuardFactory(Point p, int los, int[] dirs, boolean restart) {
             this.p = p;
             this.los = los;
             this.dirs = dirs;
+            this.restart = restart;
         }
 
         @Override
-        public GuardObject create() {
-            return new RotatingGuardObject(p, los, dirs);
+        public GuardObject create(CoordinateSpace cs) {
+            return new RotatingGuardObject(p, los, dirs, restart);
         }
     }
 }

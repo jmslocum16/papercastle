@@ -1,6 +1,7 @@
 package papercastle.com.papercastle;
 
 import android.graphics.Point;
+import android.util.Log;
 
 import static papercastle.com.papercastle.Level.CSType.GRID;
 import static papercastle.com.papercastle.Level.Terrain.END;
@@ -30,7 +31,6 @@ public class Level {
     private final Terrain[][] layout;
     private final int[] cloneTypes;
     private final GuardObject.GuardFactory[] guards;
-    // TODO clone type definitions
 
     Level(CSType csType, Terrain[][] layout, int[] cloneTypes, GuardObject.GuardFactory[] guards) {
         this.csType = csType;
@@ -68,8 +68,11 @@ public class Level {
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE}
             }, new int[] {1, 0, 2}
             ,new GuardObject.GuardFactory[] {
-                    new RotatingGuardObject.RotatingGuardFactory(new Point(1, 3), 4, new int[] {0, 1, 2, 3}),
-                    new RotatingGuardObject.RotatingGuardFactory(new Point(5, 5), 2, new int[] {0, 2})
+                    new RotatingGuardObject.RotatingGuardFactory(new Point(1, 3), 4, new int[] {0, 1, 2, 3}, true),
+                    new RotatingGuardObject.RotatingGuardFactory(new Point(5, 5), 2, new int[] {0, 1, 2}, false),
+                    new PatrollingGuardObject.PatrollingGuardFactory(new Point[] {new Point(4, 4), new Point(4, 3), new Point(3, 3), new Point(3, 4), new Point(4, 4)}, 2, true),
+                    new PatrollingGuardObject.PatrollingGuardFactory(new Point[] {new Point(8, 2), new Point(8, 1), new Point(7, 1)}, 1, false)
+
             }),
             new Level(GRID, new Terrain[][] {
                     {NONE, NONE, NONE, NONE, NONE, WALL, NONE, NONE, NONE},

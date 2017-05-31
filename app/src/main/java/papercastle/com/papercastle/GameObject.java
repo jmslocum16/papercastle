@@ -19,9 +19,9 @@ public class GameObject {
 
     //
 
-    private List<Point> path;
-    private double pathPos;
-    private double speed; // cells per second
+    protected List<Point> path;
+    protected double pathPos;
+    protected double speed; // cells per second
 
     protected final int color;
     protected final int pathColor;

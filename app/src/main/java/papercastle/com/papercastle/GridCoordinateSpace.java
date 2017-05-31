@@ -103,6 +103,24 @@ public class GridCoordinateSpace implements CoordinateSpace {
         return new Point(p.x + deltas[direction][0], p.y + deltas[direction][1]);
     }
 
+    @Override
+    public int getDirectionVector(Point a, Point b) {
+        final int dx = b.x - a.x;
+        final int dy = b.y - a.y;
+
+        int index = -1;
+        for (int i = 0; i < 4; i++) {
+            if (deltas[i][0] == dx && deltas[i][1] == dy) {
+                index = i;
+                break;
+            }
+        }
+        if (index == -1) {
+            throw new IllegalArgumentException();
+        }
+        return index;
+    }
+
     private void addIfInBounds(List<Point> l, int x, int y) {
         if (x >= 0 && y >= 0 && x < gridWidth && y < gridHeight) {
             l.add(new Point(x, y));
