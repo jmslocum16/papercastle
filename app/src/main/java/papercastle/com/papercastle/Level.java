@@ -23,7 +23,7 @@ public class Level {
     }
 
     public static boolean isPassable(Terrain[][] terrain, int x, int y) {
-        return x >= 0 && y >= 0 && y <= terrain.length && x <= terrain[y].length && terrain[y][x] == NONE;
+        return x >= 0 && y >= 0 && y < terrain.length && x < terrain[y].length && terrain[y][x] == NONE;
     }
 
     private final CSType csType;
@@ -67,7 +67,10 @@ public class Level {
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE},
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE}
             }, new int[] {1, 0, 2}
-            ,new GuardObject.GuardFactory[] {}),
+            ,new GuardObject.GuardFactory[] {
+                    new RotatingGuardObject.RotatingGuardFactory(new Point(1, 3), 4, new int[] {0, 1, 2, 3}),
+                    new RotatingGuardObject.RotatingGuardFactory(new Point(5, 5), 2, new int[] {0, 2})
+            }),
             new Level(GRID, new Terrain[][] {
                     {NONE, NONE, NONE, NONE, NONE, WALL, NONE, NONE, NONE},
                     {NONE, NONE, NONE, WALL, NONE, WALL, NONE, NONE, NONE},

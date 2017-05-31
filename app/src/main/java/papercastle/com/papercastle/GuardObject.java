@@ -21,11 +21,11 @@ public class GuardObject extends GameObject {
         STATIONARY, ROTATING, PATROLLING
     }*/
 
-    private static final int CELEBRATE_MS = 2500; // the amount of time they celebrate after catching you before returning to work
+    protected static final int CELEBRATE_MS = 2500; // the amount of time they celebrate after catching you before returning to work
 
     private final int LOS; // line of sight
     private int curLos;
-    private int dir;
+    protected int dir;
 
     private int celebrateMs;
 
