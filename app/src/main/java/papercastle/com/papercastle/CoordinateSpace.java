@@ -20,7 +20,6 @@ public interface CoordinateSpace {
 
     public int distance (Point a, Point b);
 
-    // TODO
     public void draw(Canvas canvas, Paint paint);
 
     public void highlightCell(Point p, Canvas canvas, Paint paint);

@@ -100,6 +100,9 @@ public class LevelState {
         selectObject(playerObject);
 
         availableClones = Arrays.copyOf(l.getCloneTypes(), l.getCloneTypes().length);
+        if (availableClones.length > SelectableGameObject.CLONE_TYPE_DEFS.length) {
+            throw new IllegalArgumentException("want " + availableClones.length + " types of clones but only " + SelectableGameObject.CLONE_TYPE_DEFS.length);
+        }
         activeClonePlacement = -1;
 
         switchToPlan();
@@ -138,10 +141,8 @@ public class LevelState {
     private void levelOver(boolean success) {
         if (success) {
             gameState = GameState.SUCCESS;
-            // TODO UI stuff?
         } else {
             gameState = GameState.FAILURE;
-            // TODO UI stuff?
         }
     }
 
@@ -154,7 +155,7 @@ public class LevelState {
         cs.draw(canvas, paint);
 
         if (activeClonePlacement != -1) {
-            paint.setColor(Color.RED);
+            paint.setColor(SelectableGameObject.CLONE_TYPE_DEFS[activeClonePlacement].color());
             final Point playerScreenPos = playerObject.getCurScreenPos(cs);
             final Point playerPos = cs.screenToPos(playerScreenPos);
             final List<Point> playerNeighbors = cs.neighbors(playerPos);
@@ -225,7 +226,7 @@ public class LevelState {
 
                 centerX = canvasWidth + drawWidth * 2 / 3;
                 centerY = (5 + pos * 2) * height / 16;
-                paint.setColor(Color.argb(255, 255, 160, 0)); // TODO real color based on clonedef
+                paint.setColor(SelectableGameObject.CLONE_TYPE_DEFS[i].color());
 
                 paint.setStyle(Paint.Style.FILL);
                 canvas.drawCircle(centerX, centerY, drawWidth / 3, paint);
@@ -325,7 +326,7 @@ public class LevelState {
 
     private void successfulClonePlacement(final Point p, final int cloneTypeNum) {
         stopClonePlacement();
-        final SelectableGameObject newClone = new SelectableGameObject(p, 1.0, Color.argb(255, 255, 160 ,0)); // TODO actual types
+        final SelectableGameObject newClone = SelectableGameObject.CLONE_TYPE_DEFS[cloneTypeNum].create(p);
         synchronized (objectsLock) {
             objects.add(newClone);
             selectableObjects.add(newClone);
@@ -362,7 +363,6 @@ public class LevelState {
                 selectObject(getClickedSelectableObject(screenX, screenY));
             }
         } else {
-            // TODO once have ui simplify
             final SelectableGameObject clicked = getClickedSelectableObject(screenX, screenY);
             selectObject(clicked);
         }

@@ -63,7 +63,7 @@ public class GameActivity extends Activity {
         private int canvasWidth = -1;
         private int uiWidth = -1;
         private int height = -1;
-        private int gridSize = -1; // TODO
+        private int gridSize = -1;
 
         // level state
         private int currentLevel;
@@ -104,17 +104,10 @@ public class GameActivity extends Activity {
                 }
                 setupLevel();
             } else {
-                final LevelState.GameState prevState = levelState.getGameState();
                 levelState.handleClick(screenX, screenY);
-                final LevelState.GameState newState = levelState.getGameState();
-                if (prevState != newState) {
-                    // TODO UI stuff
-                    Log.e("GameView", "game state changed to " + newState);
-                }
             }
         }
 
-        // TODO make this work based on screen dimensions
         private void computeUIFactors(final int width, final int height) {
             // want menu on side to be at least 10% of screen
             uiWidth = width / 10;
@@ -127,7 +120,6 @@ public class GameActivity extends Activity {
         }
 
         private void setup() {
-            // TODO bunch of stuff
             setupLevel();
         }
 
