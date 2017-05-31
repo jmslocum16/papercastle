@@ -7,7 +7,9 @@ import android.graphics.Path;
 import android.graphics.Point;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -105,6 +107,12 @@ public class LevelState {
         }
         activeClonePlacement = -1;
 
+        for (GuardObject.GuardFactory factory : l.getGuards()) {
+            final GuardObject guard = factory.create();
+            guard.computeLOS(cs, terrain);
+            objects.add(guard);
+        }
+
         switchToPlan();
     }
 
@@ -127,6 +135,15 @@ public class LevelState {
                 }
             }
 
+            // compute LOS for all guards
+            synchronized (objectsLock) {
+                for (GameObject object : objects) {
+                    if (object instanceof GuardObject) {
+                        ((GuardObject)object).computeLOS(cs, terrain);
+                    }
+                }
+            }
+
             // object interactions
             final Point playerScreenPos = playerObject.getCurScreenPos(cs);
             final Point playerPos = cs.screenToPos(playerScreenPos);
@@ -134,6 +151,34 @@ public class LevelState {
                 // won the game
                 levelOver(true);
                 return;
+            }
+
+            // check to see if any guards intersect with any selectable objects
+            synchronized (objectsLock) {
+                Set<SelectableGameObject> caught = new HashSet<>();
+                for (GameObject object : objects) {
+                    if (object instanceof GuardObject) {
+                        final GuardObject guard = (GuardObject)object;
+                        if (guard.isCelebrating()) continue;
+                        final List<Point> los = guard.getPointsInLOS(cs);
+
+                        for (SelectableGameObject sgo : selectableObjects) {
+                            final Point pos = cs.screenToPos(sgo.getCurScreenPos(cs));
+                            if (los.contains(pos)) {
+                                guard.startCelebrating();
+                                if (playerObject == sgo) {
+                                    // lost game
+                                    levelOver(false);
+                                    return;
+                                } else {
+                                    caught.add(sgo);
+                                }
+                            }
+                        }
+                    }
+                }
+                objects.removeAll(caught);
+                selectableObjects.removeAll(caught);
             }
         }
     }
@@ -267,14 +312,6 @@ public class LevelState {
         return gameState;
     }
 
-    private boolean pointInBounds(final Point pos) {
-        return pos.x >= 0 && pos.y >= 0 && pos.y <= terrain.length && pos.x <= terrain[pos.y].length;
-    }
-
-    private boolean isPassable(final Point pos) {
-        return pointInBounds(pos) && terrain[pos.y][pos.x] == NONE;
-    }
-
     public void handleClick(int screenX, int screenY) {
         if (screenX < canvasWidth) {
             handleCanvasClick(screenX, screenY);
@@ -346,7 +383,7 @@ public class LevelState {
             final Point playerScreenPos = playerObject.getCurScreenPos(cs);
             final Point playerPos = cs.screenToPos(playerScreenPos);
             final int clickDist = cs.distance(clickPos, playerPos);
-            if (clickDist == 1 && isPassable(clickPos)) {
+            if (clickDist == 1 && Level.isPassable(terrain, clickPos.x, clickPos.y)) {
                 successfulClonePlacement(clickPos, activeClonePlacement);
                 return;
             }
@@ -357,7 +394,7 @@ public class LevelState {
         if (selectedObject != null) {
             final Point lastPathPoint = selectedObject.getLastPathPoint();
             final int manDist = cs.distance(clickPos, lastPathPoint);
-            if (manDist == 1 && isPassable(clickPos)) {
+            if (manDist == 1 && Level.isPassable(terrain, clickPos.x, clickPos.y)) {
                 selectedObject.addPointToPath(clickPos);
             } else if (manDist >= 2) {
                 selectObject(getClickedSelectableObject(screenX, screenY));

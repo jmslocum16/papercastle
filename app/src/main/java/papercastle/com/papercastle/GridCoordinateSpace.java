@@ -91,6 +91,18 @@ public class GridCoordinateSpace implements CoordinateSpace {
         return l;
     }
 
+    @Override
+    public int numDirections() {
+        return 4;
+    }
+
+    private int[][] deltas = new int[][] {{1, 0}, {0, -1}, {-1, 0}, {0, 1}};
+
+    @Override
+    public Point getNeighborInDirection(Point p, int direction) {
+        return new Point(p.x + deltas[direction][0], p.y + deltas[direction][1]);
+    }
+
     private void addIfInBounds(List<Point> l, int x, int y) {
         if (x >= 0 && y >= 0 && x < gridWidth && y < gridHeight) {
             l.add(new Point(x, y));

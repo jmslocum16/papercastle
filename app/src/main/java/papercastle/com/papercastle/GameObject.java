@@ -118,4 +118,6 @@ public class GameObject {
     public Point getLastPathPoint() {
         return path.get(path.size() - 1);
     }
+
+
 }

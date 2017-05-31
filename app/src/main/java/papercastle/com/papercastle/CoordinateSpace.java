@@ -29,4 +29,8 @@ public interface CoordinateSpace {
     public int getGridSize();
 
     public List<Point> neighbors(Point p);
+
+    public int numDirections();
+
+    public Point getNeighborInDirection(Point p, int direction);
 }

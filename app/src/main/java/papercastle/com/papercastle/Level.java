@@ -22,15 +22,21 @@ public class Level {
         NONE, WALL, START, END
     }
 
+    public static boolean isPassable(Terrain[][] terrain, int x, int y) {
+        return x >= 0 && y >= 0 && y <= terrain.length && x <= terrain[y].length && terrain[y][x] == NONE;
+    }
+
     private final CSType csType;
     private final Terrain[][] layout;
     private final int[] cloneTypes;
+    private final GuardObject.GuardFactory[] guards;
     // TODO clone type definitions
 
-    Level(CSType csType, Terrain[][] layout, int[] cloneTypes) {
+    Level(CSType csType, Terrain[][] layout, int[] cloneTypes, GuardObject.GuardFactory[] guards) {
         this.csType = csType;
         this.layout = layout;
         this.cloneTypes = cloneTypes;
+        this.guards = guards;
     }
 
     public CSType getCsType() {
@@ -45,6 +51,10 @@ public class Level {
         return cloneTypes;
     }
 
+    public GuardObject.GuardFactory[] getGuards() {
+        return guards;
+    }
+
     public static final int WIDTH = 9;
     public static final int HEIGHT = 6;
 
@@ -56,7 +66,8 @@ public class Level {
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE},
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE},
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE}
-            }, new int[] {1, 0, 2, 0, 21}),
+            }, new int[] {1, 0, 2}
+            ,new GuardObject.GuardFactory[] {}),
             new Level(GRID, new Terrain[][] {
                     {NONE, NONE, NONE, NONE, NONE, WALL, NONE, NONE, NONE},
                     {NONE, NONE, NONE, WALL, NONE, WALL, NONE, NONE, NONE},
@@ -64,6 +75,12 @@ public class Level {
                     {WALL, WALL, WALL, WALL, NONE, WALL, END, NONE, NONE},
                     {NONE, NONE, NONE, NONE, NONE, WALL, WALL, WALL, NONE},
                     {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE}
-            }, new int[] {0, 0, 1})
+            }, new int[] {20}
+            , new GuardObject.GuardFactory[] {
+                    new GuardObject.StationaryGuardFactory(new Point(0, 5), 4, 0),
+                    new GuardObject.StationaryGuardFactory(new Point(0, 2), 5, 1),
+                    new GuardObject.StationaryGuardFactory(new Point(8, 0), 1, 2),
+                    new GuardObject.StationaryGuardFactory(new Point(6, 0), 4, 3)
+            } )
     };
 }
